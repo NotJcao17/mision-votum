@@ -15,7 +15,10 @@ export default async function EventConfigPage({
 
   const event = await prisma.event.findUnique({
     where: { id },
-    include: { _count: { select: { votes: true } } },
+    include: {
+      _count: { select: { votes: true } },
+      categories: { orderBy: { order: 'asc' } },
+    },
   });
 
   if (!event) notFound();
@@ -33,6 +36,7 @@ export default async function EventConfigPage({
           maxScore: event.maxScore,
           estado: statusToLabel(event.status),
           votos: event._count.votes,
+          categorias: event.categories.map((c) => ({ id: c.id, nombre: c.name })),
         }}
       />
     </div>
