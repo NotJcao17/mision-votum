@@ -245,7 +245,7 @@ export function EventConfigClient({ evento }: { evento: EventoVM }) {
     { label: 'Datos generales', target: 'sec-datos' },
     { label: 'Categorías', target: 'sec-categorias' },
     { label: 'Equipos', href: `/admin/eventos/${evento.id}/equipos` },
-    { label: 'Jueces', soon: true },
+    { label: 'Jueces', href: `/admin/eventos/${evento.id}/jueces` },
     { label: 'Progreso', soon: true, lockedNav: estado === 'Borrador' },
     { label: 'Resultados', soon: true, lockedNav: estado === 'Borrador' },
   ];
