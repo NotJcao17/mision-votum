@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface ConfirmData {
   title: string;
@@ -26,6 +26,7 @@ export function ConfirmDialog({
   onConfirm: () => void;
 }) {
   const [text, setText] = useState('');
+  const downOnOverlay = useRef(false);
 
   useEffect(() => {
     setText('');
@@ -41,11 +42,19 @@ export function ConfirmDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4 backdrop-blur-sm"
-      onClick={onCancel}
+      onMouseDown={(e) => {
+        downOnOverlay.current = e.target === e.currentTarget;
+      }}
+      onMouseUp={(e) => {
+        if (downOnOverlay.current && e.target === e.currentTarget) {
+          onCancel();
+        }
+        downOnOverlay.current = false;
+      }}
     >
       <div
         className="w-full max-w-md rounded-2xl border border-ink/10 bg-ivory p-6 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
           <span

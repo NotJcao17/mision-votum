@@ -12,6 +12,11 @@ import {
   buildBaseUsername,
   generateUniqueUsername,
 } from '@/lib/auth/usernames';
+import {
+  getMailTransport,
+  getFromEmail,
+  buildCredentialsEmail,
+} from '@/lib/email';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -279,4 +284,152 @@ export async function importJudges(
   } catch {
     return { ok: false, error: 'No se pudieron importar los jueces.' };
   }
+}
+
+// ─── Envío de credenciales por email (Resend) ────────────────────────
+
+export interface SendResult extends ActionResult {
+  recipient?: string;
+}
+
+export interface SendAllResult extends ActionResult {
+  sent?: number;
+  failed?: number;
+}
+
+async function sendCredentialsEmail(args: {
+  to: string;
+  judgeName: string;
+  eventName: string;
+  username: string;
+  password: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const transport = getMailTransport();
+  if (!transport) {
+    return {
+      ok: false,
+      error: 'Configura SMTP_USER y SMTP_PASS en .env para poder enviar emails.',
+    };
+  }
+  const { subject, html, text } = buildCredentialsEmail({
+    judgeName: args.judgeName,
+    eventName: args.eventName,
+    username: args.username,
+    password: args.password,
+    loginUrl: process.env.APP_URL || undefined,
+  });
+  try {
+    await transport.sendMail({
+      from: getFromEmail(),
+      to: args.to,
+      subject,
+      html,
+      text,
+    });
+    return { ok: true };
+  } catch (e) {
+    console.error('[SMTP] send failed:', e);
+    const msg = e instanceof Error ? e.message : 'desconocido';
+    return { ok: false, error: `No se pudo enviar el correo: ${msg}` };
+  }
+}
+
+export async function sendJudgeCredentials(
+  judgeId: string,
+): Promise<SendResult> {
+  await requireAdmin();
+  const judge = await prisma.judge.findUnique({
+    where: { id: judgeId },
+    select: {
+      name: true,
+      email: true,
+      username: true,
+      passwordEncrypted: true,
+      passwordIv: true,
+      passwordAuthTag: true,
+      event: { select: { name: true } },
+    },
+  });
+  if (!judge) return { ok: false, error: 'Juez no encontrado.' };
+  if (!judge.email) {
+    return { ok: false, error: 'Este juez no tiene email registrado.' };
+  }
+  let password: string;
+  try {
+    password = decryptPassword({
+      encrypted: judge.passwordEncrypted,
+      iv: judge.passwordIv,
+      authTag: judge.passwordAuthTag,
+    });
+  } catch {
+    return { ok: false, error: 'No se pudo descifrar la contraseña.' };
+  }
+  const res = await sendCredentialsEmail({
+    to: judge.email,
+    judgeName: judge.name,
+    eventName: judge.event.name,
+    username: judge.username,
+    password,
+  });
+  if (!res.ok) return { ok: false, error: res.error };
+  return { ok: true, recipient: judge.email };
+}
+
+export async function sendAllJudgeCredentials(
+  eventId: string,
+): Promise<SendAllResult> {
+  await requireAdmin();
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { name: true },
+  });
+  if (!event) return { ok: false, error: 'Evento no encontrado.' };
+
+  const judges = await prisma.judge.findMany({
+    where: { eventId, NOT: { email: null } },
+    select: {
+      name: true,
+      email: true,
+      username: true,
+      passwordEncrypted: true,
+      passwordIv: true,
+      passwordAuthTag: true,
+    },
+  });
+  if (judges.length === 0) {
+    return {
+      ok: false,
+      error: 'Ningún juez del evento tiene email registrado.',
+    };
+  }
+
+  // Cortocircuito: si no hay credenciales SMTP, falla con mensaje claro.
+  if (!getMailTransport()) {
+    return {
+      ok: false,
+      error: 'Configura SMTP_USER y SMTP_PASS en .env para poder enviar emails.',
+    };
+  }
+
+  const results = await Promise.allSettled(
+    judges.map(async (j) => {
+      const password = decryptPassword({
+        encrypted: j.passwordEncrypted,
+        iv: j.passwordIv,
+        authTag: j.passwordAuthTag,
+      });
+      const r = await sendCredentialsEmail({
+        to: j.email!,
+        judgeName: j.name,
+        eventName: event.name,
+        username: j.username,
+        password,
+      });
+      if (!r.ok) throw new Error(r.error ?? 'send failed');
+    }),
+  );
+
+  const sent = results.filter((r) => r.status === 'fulfilled').length;
+  const failed = results.length - sent;
+  return { ok: true, sent, failed };
 }

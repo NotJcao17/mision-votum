@@ -25,6 +25,8 @@ import {
   regenerateJudgePassword,
   revealJudgePassword,
   importJudges,
+  sendJudgeCredentials,
+  sendAllJudgeCredentials,
   type ImportEntry,
 } from './actions';
 
@@ -212,6 +214,38 @@ export function JudgesManagerClient({
       } else {
         showToast(res.error ?? 'No se pudo regenerar la contraseña.', 'info');
         setRegenTarget(null);
+      }
+    });
+  }
+
+  function handleSendOne(j: JudgeVM) {
+    if (!j.email) return;
+    startTransition(async () => {
+      const res = await sendJudgeCredentials(j.id);
+      if (res.ok && res.recipient) {
+        showToast(`Credenciales enviadas a ${res.recipient}`);
+      } else {
+        showToast(res.error ?? 'No se pudo enviar el correo.', 'info');
+      }
+    });
+  }
+
+  function handleSendAll() {
+    setSendAllOpen(false);
+    startTransition(async () => {
+      const res = await sendAllJudgeCredentials(eventId);
+      if (!res.ok) {
+        showToast(res.error ?? 'No se pudieron enviar los correos.', 'info');
+        return;
+      }
+      const sent = res.sent ?? 0;
+      const failed = res.failed ?? 0;
+      if (failed === 0) {
+        showToast(
+          `Credenciales enviadas a ${sent} ${sent === 1 ? 'juez' : 'jueces'}`,
+        );
+      } else {
+        showToast(`Se enviaron ${sent} · ${failed} fallaron`, 'info');
       }
     });
   }
@@ -411,12 +445,8 @@ export function JudgesManagerClient({
                   <div className="flex items-center gap-1.5 md:justify-end">
                     {!readOnly && (
                       <button
-                        onClick={() =>
-                          j.email
-                            ? showToast('Disponible en la Fase 10 (envío de emails).', 'info')
-                            : undefined
-                        }
-                        disabled={!j.email}
+                        onClick={() => handleSendOne(j)}
+                        disabled={!j.email || pending}
                         title={
                           j.email
                             ? 'Enviar credenciales'
@@ -522,10 +552,7 @@ export function JudgesManagerClient({
         data={sendAllData}
         busy={pending}
         onCancel={() => setSendAllOpen(false)}
-        onConfirm={() => {
-          setSendAllOpen(false);
-          showToast('Disponible en la Fase 10 (envío de emails).', 'info');
-        }}
+        onConfirm={handleSendAll}
       />
 
       <Toast toast={toast} />
