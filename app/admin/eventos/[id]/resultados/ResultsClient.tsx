@@ -9,6 +9,7 @@ import {
   BackIcon,
   ChevronDownIcon,
   DownloadIcon,
+  Spinner,
 } from '@/components/ui/icons';
 import type { CategoryRanking } from '@/lib/results';
 
@@ -41,9 +42,42 @@ export function ResultsClient({
   );
 
   const isPartial = estado === 'Activo';
+  const [exporting, setExporting] = useState(false);
 
-  function handleExport() {
-    showToast('Disponible en la Fase 9 (exportación a Excel).', 'info');
+  async function handleExport() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const res = await fetch(`/api/eventos/${eventId}/exportar`);
+      if (!res.ok) {
+        let message = 'No se pudo generar el archivo.';
+        try {
+          const data = (await res.json()) as { error?: string };
+          if (data.error) message = data.error;
+        } catch {
+          // Sin cuerpo JSON, dejamos el mensaje por defecto.
+        }
+        showToast(message, 'info');
+        return;
+      }
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const match = disposition.match(/filename="?([^"]+)"?/i);
+      const filename = match?.[1] ?? `${eventName}.xlsx`;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Archivo exportado');
+    } catch {
+      showToast('No se pudo generar el archivo.', 'info');
+    } finally {
+      setExporting(false);
+    }
   }
 
   return (
@@ -69,10 +103,15 @@ export function ResultsClient({
               {isPartial && <RefreshButton />}
               <button
                 onClick={handleExport}
-                className="inline-flex items-center gap-2 rounded-xl bg-olive px-4 py-2.5 text-sm font-bold text-ivory transition hover:bg-olive/90"
+                disabled={exporting}
+                className="inline-flex items-center gap-2 rounded-xl bg-olive px-4 py-2.5 text-sm font-bold text-ivory transition hover:bg-olive/90 disabled:cursor-wait disabled:opacity-70"
               >
-                <DownloadIcon className="h-[18px] w-[18px]" />
-                Exportar a Excel
+                {exporting ? (
+                  <Spinner className="h-[18px] w-[18px]" />
+                ) : (
+                  <DownloadIcon className="h-[18px] w-[18px]" />
+                )}
+                {exporting ? 'Exportando…' : 'Exportar a Excel'}
               </button>
             </div>
           </div>
