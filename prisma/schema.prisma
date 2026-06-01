@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum EventStatus {
+  DRAFT    // Borrador: todo editable, jueces no pueden entrar
+  ACTIVE   // Activo: jueces votan; categorías y rango bloqueados
+  CLOSED   // Cerrado: solo lectura y exportación
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  eventDate   DateTime?
+  minScore    Int         @default(1)
+  maxScore    Int         @default(5)
+  status      EventStatus @default(DRAFT)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  categories  Category[]
+  teams       Team[]
+  judges      Judge[]
+  votes       Vote[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  eventId   String
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  votes     Vote[]
+
+  @@index([eventId])
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  eventId   String
+  name      String
+  createdAt DateTime @default(now())
+
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  votes     Vote[]
+
+  @@index([eventId])
+}
+
+model Judge {
+  id                String   @id @default(cuid())
+  eventId           String
+  name              String
+  username          String   @unique
+  email             String?
+  passwordEncrypted String
+  passwordIv        String
+  passwordAuthTag   String
+  createdAt         DateTime @default(now())
+
+  event             Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  votes             Vote[]
+
+  @@index([eventId])
+}
+
+model Vote {
+  id         String   @id @default(cuid())
+  eventId    String
+  judgeId    String
+  teamId     String
+  categoryId String
+  score      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  judge      Judge    @relation(fields: [judgeId], references: [id], onDelete: Cascade)
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // Un juez solo puede tener un voto por equipo+categoría. Re-votar = update.
+  @@unique([judgeId, teamId, categoryId])
+  @@index([eventId])
+}
