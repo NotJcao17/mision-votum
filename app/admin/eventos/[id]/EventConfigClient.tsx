@@ -249,7 +249,9 @@ export function EventConfigClient({ evento }: { evento: EventoVM }) {
     estado === 'Borrador'
       ? { label: 'Progreso', soon: true, lockedNav: true }
       : { label: 'Progreso', href: `/admin/eventos/${evento.id}/progreso` },
-    { label: 'Resultados', soon: true, lockedNav: estado === 'Borrador' },
+    estado === 'Borrador'
+      ? { label: 'Resultados', soon: true, lockedNav: true }
+      : { label: 'Resultados', href: `/admin/eventos/${evento.id}/resultados` },
   ];
 
   return (
