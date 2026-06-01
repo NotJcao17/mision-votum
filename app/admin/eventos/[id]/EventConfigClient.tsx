@@ -238,12 +238,13 @@ export function EventConfigClient({ evento }: { evento: EventoVM }) {
   const navItems: {
     label: string;
     target?: string;
+    href?: string;
     soon?: boolean;
     lockedNav?: boolean;
   }[] = [
     { label: 'Datos generales', target: 'sec-datos' },
     { label: 'Categorías', target: 'sec-categorias' },
-    { label: 'Equipos', soon: true },
+    { label: 'Equipos', href: `/admin/eventos/${evento.id}/equipos` },
     { label: 'Jueces', soon: true },
     { label: 'Progreso', soon: true, lockedNav: estado === 'Borrador' },
     { label: 'Resultados', soon: true, lockedNav: estado === 'Borrador' },
@@ -308,26 +309,39 @@ export function EventConfigClient({ evento }: { evento: EventoVM }) {
         <nav className="mb-6 lg:mb-0">
           <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:gap-0.5">
             {navItems.map((it) => {
-              const active = !!it.target;
+              const isLink = !!it.href;
+              const isScroll = !!it.target;
+              const activeStyle = 'text-inksoft hover:bg-ink/5 hover:text-ink';
+              const scrollStyle = 'bg-terra/10 text-terra hover:bg-terra/15';
+              const className = `flex w-full items-center justify-between gap-2 whitespace-nowrap rounded-lg px-3.5 py-2.5 text-left text-sm font-bold transition ${
+                isScroll ? scrollStyle : isLink ? activeStyle : 'cursor-not-allowed text-inkfaint/50'
+              }`;
+              const inner = (
+                <>
+                  <span>{it.label}</span>
+                  {it.lockedNav ? (
+                    <LockIcon className="h-3.5 w-3.5" />
+                  ) : it.soon ? (
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-inkfaint/60">pronto</span>
+                  ) : null}
+                </>
+              );
               return (
                 <li key={it.label}>
-                  <button
-                    disabled={it.soon}
-                    onClick={() => it.target && scrollToSection(it.target)}
-                    className={`flex w-full items-center justify-between gap-2 whitespace-nowrap rounded-lg px-3.5 py-2.5 text-left text-sm font-bold transition ${
-                      active
-                        ? 'bg-terra/10 text-terra hover:bg-terra/15'
-                        : 'cursor-not-allowed text-inkfaint/50'
-                    }`}
-                    title={it.soon ? (it.lockedNav ? 'El evento aún no ha iniciado.' : 'Disponible en una fase posterior') : undefined}
-                  >
-                    <span>{it.label}</span>
-                    {it.lockedNav ? (
-                      <LockIcon className="h-3.5 w-3.5" />
-                    ) : it.soon ? (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-inkfaint/60">pronto</span>
-                    ) : null}
-                  </button>
+                  {isLink ? (
+                    <a href={it.href!} className={className}>
+                      {inner}
+                    </a>
+                  ) : (
+                    <button
+                      disabled={it.soon}
+                      onClick={() => isScroll && scrollToSection(it.target!)}
+                      className={className}
+                      title={it.soon ? (it.lockedNav ? 'El evento aún no ha iniciado.' : 'Disponible en una fase posterior') : undefined}
+                    >
+                      {inner}
+                    </button>
+                  )}
                 </li>
               );
             })}
