@@ -1,0 +1,31 @@
+{
+  "name": "Misión Votum",
+  "short_name": "Votum",
+  "description": "Sistema de votaciones para concursos escolares — Colegio Misión Montessori",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF5EC",
+  "theme_color": "#C2552F",
+  "lang": "es-MX",
+  "icons": [
+    {
+      "src": "/logo-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-nobg-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

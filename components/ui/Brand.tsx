@@ -1,11 +1,17 @@
-// Misión Votum · Logo + marca (portado de docs/mockups/components/ui.jsx)
+// Misión Votum · Logo + marca
+import Image from 'next/image';
 
 export function Brand({ subtitle }: { subtitle?: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="grid h-9 w-9 place-items-center rounded-full border-2 border-terra">
-        <span className="h-2 w-2 rounded-full bg-terra" />
-      </span>
+      <Image
+        src="/logo-nobg-128.png"
+        alt="Misión Votum"
+        width={36}
+        height={36}
+        priority
+        className="h-9 w-9"
+      />
       <div className="leading-tight">
         <div className="whitespace-nowrap font-body text-sm font-bold uppercase tracking-[0.18em] text-terra">
           Misión Votum

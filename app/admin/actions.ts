@@ -63,6 +63,12 @@ export async function updateEvent(
           error: 'El mínimo del rango debe ser menor que el máximo.',
         };
       }
+      if (maxScore - minScore + 1 > 20) {
+        return {
+          ok: false,
+          error: 'El rango no puede tener más de 20 valores (ej. del 1 al 20).',
+        };
+      }
     }
 
     await prisma.event.update({

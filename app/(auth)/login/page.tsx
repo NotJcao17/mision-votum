@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { loginAction } from './actions';
 import { EyeIcon, Spinner, ArrowIcon } from '@/components/ui/icons';
@@ -49,9 +50,14 @@ export default function LoginPage() {
         <div className="pointer-events-none absolute -bottom-12 -right-8 h-56 w-56 rounded-full border border-ivory/15" />
 
         <div className="relative flex items-center gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-full border-2 border-ivory/70">
-            <span className="h-2 w-2 rounded-full bg-ivory" />
-          </span>
+          <Image
+            src="/logo-crema-128.png"
+            alt="Misión Votum"
+            width={36}
+            height={36}
+            priority
+            className="h-9 w-9"
+          />
           <span className="text-sm font-bold uppercase tracking-[0.22em]">Misión Votum</span>
         </div>
 
@@ -60,7 +66,7 @@ export default function LoginPage() {
             Vota lo mejor<br />del mundo.
           </h1>
           <p className="mt-5 max-w-sm text-base leading-relaxed text-ivory/85 md:text-lg">
-            La plataforma de votación de los concursos culturales del colegio: comida, monumentos, vestimenta y danza de cada país.
+            La plataforma de votación de los concursos culturales del colegio.
           </p>
           <div className="mt-7 flex items-center gap-2" aria-hidden="true">
             {['it','jp','mx','in','fr','ma','br'].map((c) => (
@@ -71,7 +77,7 @@ export default function LoginPage() {
         </div>
 
         <p className="relative font-body text-xs uppercase tracking-[0.2em] text-ivory/70">
-          Concursos de cultura internacional · 2026
+          Concursos de cultura internacional
         </p>
       </aside>
 

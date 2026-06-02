@@ -110,7 +110,7 @@ export function VotingClient({
                 </span>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-5 gap-2">
               {rango.map((n) => {
                 const on = scores[c.id] === n;
                 return (
@@ -118,7 +118,7 @@ export function VotingClient({
                     key={n}
                     onClick={() => pick(c.id, n)}
                     aria-pressed={on}
-                    className={`flex-1 rounded-2xl py-3.5 font-display text-xl font-semibold transition ${
+                    className={`rounded-2xl py-3.5 font-display text-xl font-semibold transition ${
                       on
                         ? 'border-2 border-terra bg-terra text-ivory shadow-terra'
                         : 'border-[1.5px] border-ink/15 bg-white text-inkfaint hover:border-terra/40'

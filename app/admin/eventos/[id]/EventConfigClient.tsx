@@ -407,7 +407,7 @@ export function EventConfigClient({ evento }: { evento: EventoVM }) {
                       : 'border-ink/15 bg-cream/60 focus:border-terra focus:ring-2 focus:ring-terra/25'
                   }`}
                 />
-                <span className="text-inkfaint">· ej. “Del 1 al 5”</span>
+                <span className="text-inkfaint">· ej. “Del 1 al 5” · máx. 20 valores</span>
               </div>
             </div>
 
