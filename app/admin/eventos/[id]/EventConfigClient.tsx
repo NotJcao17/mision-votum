@@ -530,9 +530,14 @@ function CategoriaRow({
 }) {
   const initialRef = useRef(categoria.nombre);
 
-  // Si el valor cambia desde el servidor (router.refresh), actualizar el snapshot.
+  // Si el valor cambia desde el servidor (router.refresh), actualizar el
+  // snapshot. Intencional: NO depende de categoria.nombre, porque queremos
+  // ignorar las ediciones locales del usuario (si dependiera, el snapshot
+  // se reescribiría con cada keystroke y el revert al perder foco no
+  // funcionaría).
   useEffect(() => {
     initialRef.current = categoria.nombre;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoria.id]);
 
   return (

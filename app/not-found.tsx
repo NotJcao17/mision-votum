@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Brand } from '@/components/ui/Brand';
 
 export default function NotFound() {
@@ -10,12 +11,12 @@ export default function NotFound() {
       <p className="max-w-md text-[15px] text-inksoft">
         Es posible que el enlace esté roto o que el recurso ya no esté disponible.
       </p>
-      <a
+      <Link
         href="/"
         className="mt-2 inline-flex items-center gap-2 rounded-xl bg-terra px-5 py-3 text-sm font-bold text-ivory shadow-terra transition hover:bg-terradeep"
       >
         Volver al inicio
-      </a>
+      </Link>
     </main>
   );
 }
