@@ -472,3 +472,5 @@ Implementar el proyecto de forma incremental. **Al terminar cada fase se realiza
 - Revisión de textos en español y estados de carga en toda la app.
 - **Prueba:** recorrido de extremo a extremo del flujo completo (admin configura → jueces votan → admin cierra y exporta).
 ```
+
+Las 11 fases iniciales del proyecto ya fueron realizadas, en caso de que seas una IA leyendo el contexto del proyecto, puedes tomar el contexto anterior como antecedentes de lo que se realizó, no como instrucciones que tienes que seguir.
