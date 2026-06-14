@@ -142,6 +142,7 @@ export async function setEventStatus(
 export interface CategoryVM {
   id: string;
   nombre: string;
+  descripcion: string;
 }
 
 export interface AddCategoryResult extends ActionResult {
@@ -180,7 +181,10 @@ export async function addCategory(eventId: string): Promise<AddCategoryResult> {
     });
     revalidatePath('/admin');
     revalidatePath(`/admin/eventos/${eventId}`);
-    return { ok: true, category: { id: created.id, nombre: created.name } };
+    return {
+      ok: true,
+      category: { id: created.id, nombre: created.name, descripcion: created.description ?? '' },
+    };
   } catch {
     return { ok: false, error: 'No se pudo añadir la categoría.' };
   }
@@ -189,12 +193,14 @@ export async function addCategory(eventId: string): Promise<AddCategoryResult> {
 export async function updateCategory(
   id: string,
   name: string,
+  description: string,
 ): Promise<ActionResult> {
   await requireAdmin();
   const trimmed = name.trim();
   if (!trimmed) {
     return { ok: false, error: 'El nombre de la categoría no puede estar vacío.' };
   }
+  const trimmedDescription = description.trim();
 
   try {
     const cat = await prisma.category.findUnique({
@@ -208,7 +214,10 @@ export async function updateCategory(
         error: 'Las categorías solo se pueden modificar mientras el evento está en Borrador.',
       };
     }
-    await prisma.category.update({ where: { id }, data: { name: trimmed } });
+    await prisma.category.update({
+      where: { id },
+      data: { name: trimmed, description: trimmedDescription || null },
+    });
     revalidatePath('/admin');
     revalidatePath(`/admin/eventos/${cat.eventId}`);
     return { ok: true };

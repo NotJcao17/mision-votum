@@ -9,6 +9,7 @@ import { submitVote } from '../../actions';
 export interface CategoryItem {
   id: string;
   nombre: string;
+  descripcion: string;
 }
 
 export function VotingClient({
@@ -101,8 +102,13 @@ export function VotingClient({
         {categorias.map((c) => (
           <div key={c.id}>
             <div className="mb-2.5 flex items-baseline justify-between">
-              <div className="font-display text-lg font-semibold tracking-tight text-ink">
-                {c.nombre}
+              <div>
+                <div className="font-display text-lg font-semibold tracking-tight text-ink">
+                  {c.nombre}
+                </div>
+                {c.descripcion && (
+                  <p className="mt-0.5 text-xs text-inkfaint">{c.descripcion}</p>
+                )}
               </div>
               {scores[c.id] !== undefined && (
                 <span className="font-display text-base font-semibold text-terra">

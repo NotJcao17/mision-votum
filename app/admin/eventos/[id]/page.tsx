@@ -36,7 +36,11 @@ export default async function EventConfigPage({
           maxScore: event.maxScore,
           estado: statusToLabel(event.status),
           votos: event._count.votes,
-          categorias: event.categories.map((c) => ({ id: c.id, nombre: c.name })),
+          categorias: event.categories.map((c) => ({
+            id: c.id,
+            nombre: c.name,
+            descripcion: c.description ?? '',
+          })),
         }}
       />
     </div>

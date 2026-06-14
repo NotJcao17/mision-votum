@@ -38,7 +38,11 @@ export default async function JudgeVotingPage({
       teamName={team.name}
       minScore={event.minScore}
       maxScore={event.maxScore}
-      categorias={event.categories.map((c) => ({ id: c.id, nombre: c.name }))}
+      categorias={event.categories.map((c) => ({
+        id: c.id,
+        nombre: c.name,
+        descripcion: c.description ?? '',
+      }))}
       previo={previo}
     />
   );

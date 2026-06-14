@@ -24,6 +24,7 @@ import {
 interface CategoriaVM {
   id: string;
   nombre: string;
+  descripcion: string;
 }
 
 interface EventoVM {
@@ -117,24 +118,36 @@ export function EventConfigClient({ evento }: { evento: EventoVM }) {
     setCategorias((prev) => prev.map((c) => (c.id === id ? { ...c, nombre } : c)));
   }
 
-  function handleCategoryCommit(id: string, prevValue: string) {
+  function handleDescriptionChange(id: string, descripcion: string) {
+    setCategorias((prev) => prev.map((c) => (c.id === id ? { ...c, descripcion } : c)));
+  }
+
+  function handleCategoryCommit(
+    id: string,
+    prevValues: { nombre: string; descripcion: string },
+  ) {
     const current = categorias.find((c) => c.id === id);
     if (!current) return;
-    const trimmed = current.nombre.trim();
-    if (!trimmed) {
+    const trimmedName = current.nombre.trim();
+    if (!trimmedName) {
       // Revertir si quedó vacío.
       setCategorias((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, nombre: prevValue } : c)),
+        prev.map((c) => (c.id === id ? { ...c, nombre: prevValues.nombre } : c)),
       );
       return;
     }
-    if (trimmed === prevValue) return;
+    const trimmedDescription = current.descripcion.trim();
+    if (trimmedName === prevValues.nombre && trimmedDescription === prevValues.descripcion) {
+      return;
+    }
     startTransition(async () => {
-      const res = await updateCategory(id, trimmed);
+      const res = await updateCategory(id, trimmedName, trimmedDescription);
       if (!res.ok) {
         setCatError(res.error ?? 'No se pudo actualizar la categoría.');
         setCategorias((prev) =>
-          prev.map((c) => (c.id === id ? { ...c, nombre: prevValue } : c)),
+          prev.map((c) =>
+            c.id === id ? { ...c, nombre: prevValues.nombre, descripcion: prevValues.descripcion } : c,
+          ),
         );
       } else {
         setCatError('');
@@ -480,6 +493,7 @@ export function EventConfigClient({ evento }: { evento: EventoVM }) {
                     categoria={c}
                     locked={locked}
                     onChange={(name) => handleCategoryChange(c.id, name)}
+                    onDescriptionChange={(description) => handleDescriptionChange(c.id, description)}
                     onCommit={(prev) => handleCategoryCommit(c.id, prev)}
                     onDelete={() => handleCategoryDelete(c.id)}
                   />
@@ -518,6 +532,7 @@ function CategoriaRow({
   categoria,
   locked,
   onChange,
+  onDescriptionChange,
   onCommit,
   onDelete,
 }: {
@@ -525,51 +540,72 @@ function CategoriaRow({
   categoria: CategoriaVM;
   locked: boolean;
   onChange: (name: string) => void;
-  onCommit: (previousValue: string) => void;
+  onDescriptionChange: (description: string) => void;
+  onCommit: (previousValues: { nombre: string; descripcion: string }) => void;
   onDelete: () => void;
 }) {
-  const initialRef = useRef(categoria.nombre);
+  const initialRef = useRef({ nombre: categoria.nombre, descripcion: categoria.descripcion });
 
   // Si el valor cambia desde el servidor (router.refresh), actualizar el
-  // snapshot. Intencional: NO depende de categoria.nombre, porque queremos
-  // ignorar las ediciones locales del usuario (si dependiera, el snapshot
-  // se reescribiría con cada keystroke y el revert al perder foco no
+  // snapshot. Intencional: NO depende de categoria.nombre/descripcion, porque
+  // queremos ignorar las ediciones locales del usuario (si dependiera, el
+  // snapshot se reescribiría con cada keystroke y el revert al perder foco no
   // funcionaría).
   useEffect(() => {
-    initialRef.current = categoria.nombre;
+    initialRef.current = { nombre: categoria.nombre, descripcion: categoria.descripcion };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoria.id]);
 
+  function snapshot() {
+    initialRef.current = { nombre: categoria.nombre, descripcion: categoria.descripcion };
+  }
+
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-ink/10 bg-ivory px-4 py-3">
-      <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-terra/10 font-display text-sm font-semibold text-terra">
+    <li className="flex items-start gap-3 rounded-xl border border-ink/10 bg-ivory px-4 py-3">
+      <span className="mt-0.5 grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-terra/10 font-display text-sm font-semibold text-terra">
         {index + 1}
       </span>
-      {locked ? (
-        <span className="flex-1 text-[15px] font-medium text-ink">
-          {categoria.nombre || <em className="text-inkfaint">Sin nombre</em>}
-        </span>
-      ) : (
-        <input
-          value={categoria.nombre}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => {
-            initialRef.current = categoria.nombre;
-          }}
-          onBlur={() => onCommit(initialRef.current)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              (e.target as HTMLInputElement).blur();
-            }
-          }}
-          placeholder="Nombre de la categoría"
-          className="flex-1 bg-transparent text-[15px] font-medium text-ink outline-none placeholder:text-inkfaint/70"
-        />
-      )}
+      <div className="min-w-0 flex-1">
+        {locked ? (
+          <>
+            <div className="text-[15px] font-medium text-ink">
+              {categoria.nombre || <em className="text-inkfaint">Sin nombre</em>}
+            </div>
+            {categoria.descripcion && (
+              <p className="mt-1 text-xs text-inkfaint">{categoria.descripcion}</p>
+            )}
+          </>
+        ) : (
+          <>
+            <input
+              value={categoria.nombre}
+              onChange={(e) => onChange(e.target.value)}
+              onFocus={snapshot}
+              onBlur={() => onCommit(initialRef.current)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              placeholder="Nombre de la categoría"
+              className="w-full bg-transparent text-[15px] font-medium text-ink outline-none placeholder:text-inkfaint/70"
+            />
+            <textarea
+              value={categoria.descripcion}
+              onChange={(e) => onDescriptionChange(e.target.value)}
+              onFocus={snapshot}
+              onBlur={() => onCommit(initialRef.current)}
+              placeholder="Descripción opcional para los jueces…"
+              rows={2}
+              className="mt-1 w-full resize-none bg-transparent text-xs text-inksoft outline-none placeholder:text-inkfaint/70"
+            />
+          </>
+        )}
+      </div>
       {!locked && (
         <button
           onClick={onDelete}
-          className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg text-inkfaint transition hover:bg-danger/8 hover:text-danger"
+          className="mt-0.5 grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg text-inkfaint transition hover:bg-danger/8 hover:text-danger"
           aria-label="Eliminar categoría"
           title="Eliminar"
         >
