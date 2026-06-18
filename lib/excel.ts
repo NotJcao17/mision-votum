@@ -25,6 +25,25 @@ export interface ExcelVote {
   updatedAt: Date;
 }
 
+function toMexicoCityDate(date: Date): Date {
+  const f = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Mexico_City',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+  const p = Object.fromEntries(
+    f.formatToParts(date)
+      .filter((x) => x.type !== 'literal')
+      .map((x) => [x.type, parseInt(x.value, 10)]),
+  ) as { year: number; month: number; day: number; hour: number; minute: number; second: number };
+  return new Date(Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second));
+}
+
 export function slugifyEventName(name: string): string {
   const base = name
     .trim()
@@ -184,7 +203,7 @@ export async function buildEventWorkbook(args: {
       judge: judge?.name ?? '(juez eliminado)',
       username: judge?.username ?? '',
       score: v.score,
-      datetime: v.updatedAt,
+      datetime: toMexicoCityDate(v.updatedAt),
     });
   }
   detail.getColumn('datetime').numFmt = 'yyyy-mm-dd hh:mm';
