@@ -20,6 +20,13 @@ import {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Pausa entre correos del envío masivo (ms). Configurable por si conviene
+// ajustarla según el proveedor (Brevo tolera ráfagas mejor que Gmail).
+const SEND_DELAY_MS = Number(process.env.MAIL_SEND_DELAY_MS) || 700;
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export interface ActionResult {
   ok: boolean;
   error?: string;
@@ -411,8 +418,15 @@ export async function sendAllJudgeCredentials(
     };
   }
 
-  const results = await Promise.allSettled(
-    judges.map(async (j) => {
+  // Envío SECUENCIAL con una pausa entre correos. Enviar en paralelo
+  // (ráfaga) hace que los proveedores lo marquen como spam/phishing y
+  // bloqueen el lote (error Gmail 69585). En serie + pausa el patrón
+  // parece humano y mejora la entregabilidad.
+  let sent = 0;
+  let failed = 0;
+  for (let i = 0; i < judges.length; i++) {
+    const j = judges[i];
+    try {
       const password = decryptPassword({
         encrypted: j.passwordEncrypted,
         iv: j.passwordIv,
@@ -425,11 +439,13 @@ export async function sendAllJudgeCredentials(
         username: j.username,
         password,
       });
-      if (!r.ok) throw new Error(r.error ?? 'send failed');
-    }),
-  );
+      if (r.ok) sent += 1;
+      else failed += 1;
+    } catch {
+      failed += 1;
+    }
+    if (i < judges.length - 1) await delay(SEND_DELAY_MS);
+  }
 
-  const sent = results.filter((r) => r.status === 'fulfilled').length;
-  const failed = results.length - sent;
   return { ok: true, sent, failed };
 }

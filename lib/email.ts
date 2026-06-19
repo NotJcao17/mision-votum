@@ -2,28 +2,32 @@ import nodemailer, { type Transporter } from 'nodemailer';
 
 let cachedTransport: Transporter | null = null;
 
-// Devuelve un transporter SMTP de Gmail si están las credenciales, o null.
-// Requiere SMTP_USER (ej. misionvotum@gmail.com) y SMTP_PASS (la App Password
-// de 16 caracteres generada en https://myaccount.google.com/apppasswords).
+// Devuelve un transporter SMTP genérico si están las credenciales, o null.
+// Funciona con cualquier proveedor SMTP (Brevo, Gmail, etc.) según SMTP_HOST/
+// SMTP_PORT. Por defecto usa Gmail para no romper configuraciones previas.
+//   - Brevo: SMTP_HOST=smtp-relay.brevo.com, SMTP_PORT=587
+//   - Gmail: SMTP_HOST=smtp.gmail.com,       SMTP_PORT=465
 export function getMailTransport(): Transporter | null {
   if (cachedTransport) return cachedTransport;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   if (!user || !pass) return null;
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = Number(process.env.SMTP_PORT) || 465;
   cachedTransport = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    host,
+    port,
+    secure: port === 465, // 465 = SSL implícito; 587 = STARTTLS
     auth: { user, pass },
   });
   return cachedTransport;
 }
 
-// "Misión Votum <misionvotum@gmail.com>" — Gmail respeta el nombre para
-// mostrar al destinatario.
+// "Misión Votum <remitente>". El remitente debe ser una dirección verificada
+// en el proveedor (MAIL_FROM); si no se define, cae al usuario SMTP.
 export function getFromEmail(): string {
-  const user = process.env.SMTP_USER ?? 'no-reply@example.com';
-  return `Misión Votum <${user}>`;
+  const addr = process.env.MAIL_FROM || process.env.SMTP_USER || 'no-reply@example.com';
+  return `Misión Votum <${addr}>`;
 }
 
 function escapeHtml(s: string): string {

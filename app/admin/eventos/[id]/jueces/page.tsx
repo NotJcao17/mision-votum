@@ -5,6 +5,11 @@ import { AdminHeader } from '@/components/ui/AdminHeader';
 import { statusToLabel } from '@/lib/events';
 import { JudgesManagerClient, type JudgeVM } from './JudgesManagerClient';
 
+// El envío masivo de credenciales es secuencial (con pausa entre correos),
+// así que puede tardar varios segundos. Ampliamos el límite de la función
+// serverless para que no se corte a la mitad del lote.
+export const maxDuration = 60;
+
 export default async function JudgesManagerPage({
   params,
 }: {
