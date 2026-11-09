@@ -1,42 +1,194 @@
+<div align="center">
+
+<img src="public/logo-nobg-128.png" width="88" alt="Misión Votum logo">
+
 # Misión Votum
 
-Sistema de votaciones para los concursos culturales semestrales del **Colegio
-Misión Montessori**. El admin configura eventos (categorías, equipos, jueces) y
-los profesores (jueces) califican desde su celular durante el concurso. La app
-calcula promedios y rankings por categoría, y exporta los resultados a Excel.
+**The voting platform for the cultural contests of Colegio Misión Montessori.**
 
-> **Escala esperada por evento:** ~40 equipos, ~15 jueces, 5–8 categorías
-> (3 000–4 800 votos por evento, 2 eventos por año).
+*Judges score teams from their phones during the contest; the admin watches the progress live, gets rankings per category and exports everything to Excel.*
 
----
+<a href="https://mision-votum.vercel.app"><img src="https://img.shields.io/badge/In%20production-mision--votum.vercel.app-C4552D?style=for-the-badge" alt="In production at mision-votum.vercel.app"></a>
 
-## Stack
+[![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)](https://neon.tech)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Vercel](https://img.shields.io/badge/Deploy-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
 
-| Capa | Tecnología |
-|------|-----------|
-| Framework | **Next.js 15** (App Router, React 19, Server Components + Server Actions) |
-| Lenguaje | **TypeScript** |
-| Estilos | **Tailwind CSS 3** (paleta "Mercado" — terracota/crema, fuentes Fraunces + Hanken Grotesk) |
-| Base de datos | **PostgreSQL** en [Neon](https://neon.tech) (scale-to-zero, cold start ~500 ms) |
-| ORM | **Prisma 6** |
-| Autenticación | Custom — bcrypt para el admin, **AES-256-GCM** reversible para jueces (el admin necesita poder ver y reenviar contraseñas), JWT firmado con `jose` en cookie httpOnly |
-| Email | **Gmail SMTP** vía `nodemailer` (sin dominio propio; remitente `misionvotum@gmail.com`) |
-| Exportación Excel | **ExcelJS** en un Route Handler de Next.js |
-| Hosting | **Vercel** (plan Hobby) |
-| PWA | Manifest standalone (instalable en móvil, sin barra del navegador) |
+<br>
+
+<img src="docs/screenshots/login.webp" width="820" alt="Login screen">
+
+</div>
 
 ---
 
-## Cómo correrlo localmente
+## What is Misión Votum?
 
-### Requisitos
+Twice a year the school holds a cultural contest (food, costumes, dances and stands from countries
+around the world). Teams are scored by about fifteen teachers across several categories, and the
+results used to be collected on paper. **Misión Votum** replaces that:
+
+- The **admin** sets up the event (score range, categories, teams and judges), sends the judges their
+  credentials by email, follows the voting progress and publishes the results.
+- Each **judge** logs in from their phone, sees which teams are still pending and scores each category
+  with one tap.
+- When the event closes, the app computes **averages and rankings per category** and exports a
+  **two-sheet Excel file** for the record.
+
+> **Expected scale per event:** ~40 teams, ~15 judges, 5–8 categories (3,000–4,800 votes per event,
+> two events per year).
+
+The app is **in production** and protected by login. The interface is in Spanish.
+
+---
+
+## 📸 Screenshots
+
+<sub>Everything except the login comes from a local copy with a fictional demo event; no real
+judges, teams or votes are shown.</sub>
+
+### Admin
+
+<div align="center">
+
+<img src="docs/screenshots/events.webp" width="410" alt="Events dashboard">&nbsp;
+<img src="docs/screenshots/event-config.webp" width="410" alt="Event configuration">
+
+<img src="docs/screenshots/teams.webp" width="410" alt="Teams of a closed event with their vote counts">&nbsp;
+<img src="docs/screenshots/judges.webp" width="410" alt="Judges with masked passwords and credential actions">
+
+<img src="docs/screenshots/progress.webp" width="410" alt="Voting progress per judge">&nbsp;
+<img src="docs/screenshots/results.webp" width="410" alt="Ranking of a category">
+
+</div>
+
+### Judge (mobile)
+
+<div align="center">
+
+<img src="docs/screenshots/login-mobile.webp" height="420" alt="Login on a phone">&nbsp;
+<img src="docs/screenshots/judge-teams.webp" height="420" alt="Judge's list of pending teams">&nbsp;
+<img src="docs/screenshots/judge-vote.webp" height="420" alt="Scoring a team with chips">
+
+</div>
+
+---
+
+## ✨ Features
+
+### Events
+Each event goes through three states:
+
+| State | What can be done |
+| :--- | :--- |
+| **Draft** | The admin configures everything. Judges cannot log in. |
+| **Active** | Judges vote. Categories and the score range are locked; teams and judges can still be edited. |
+| **Closed** | Read only. The admin can export; judges can no longer change their votes. |
+
+Moving an event from Active back to Draft deletes all its votes, and deleting teams or judges that
+already have votes asks for a strong confirmation.
+
+### Admin
+- 🗓️ **Events dashboard** with state, date, categories, teams, judges and progress at a glance.
+- 🎚️ **Custom score range** per event (for example 1–5, up to 20 values) and categories with an
+  optional description that judges see while voting.
+- 👥 **Teams and judges**: add them one by one or **import a whole list at once**. Usernames and
+  passwords for judges are generated automatically.
+- 👁️ **Recoverable credentials**: judge passwords are encrypted (not hashed), so the admin can reveal
+  them with the eye button, regenerate them, or resend them.
+- ✉️ **Credentials by email** to one judge or to all of them, sent sequentially with a short pause to
+  respect SMTP limits.
+- 📈 **Progress dashboard**: global percentage, teams completed and progress per judge (refreshed by
+  hand, so there is no polling during the contest).
+- 🏆 **Results** per category with averages, medals for the top three and the number of votes per team.
+- 📊 **Excel export** with two sheets:
+  - **Summary**: one row per team with the average and position in every category plus the overall
+    average.
+  - **Detail**: one row per individual vote (audit trail), timestamps in `America/Mexico_City`.
+
+### Judge
+- 📱 **Mobile first** and installable as a **PWA** (standalone, no browser bar).
+- ✅ Team list with **pending first, voted after**, and a personal progress bar.
+- 👆 **One-tap scoring chips** for each category; the vote can only be sent when every category is
+  scored, and it can be changed while the event is Active.
+
+### Security
+- 🔐 One login screen for both roles; **middleware** protects `/admin` and `/juez` by role.
+- 🔑 Admin password hashed with **bcrypt**; judge passwords encrypted with **AES-256-GCM**.
+- 🍪 Sessions as a JWT signed with `jose` in an **httpOnly cookie**.
+- ⏰ A monthly **Vercel Cron** job keeps the Brevo SMTP key alive (it expires after 90 days without use).
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Framework** | Next.js 15 (App Router, React 19, Server Components + Server Actions) |
+| **Language** | TypeScript |
+| **Styling** | Tailwind CSS 3 ("Mercado" palette: terracotta and cream, Fraunces + Hanken Grotesk) |
+| **Database** | PostgreSQL on [Neon](https://neon.tech) (scale-to-zero, ~500 ms cold start) |
+| **ORM** | Prisma 6 |
+| **Auth** | Custom: bcrypt (admin), AES-256-GCM (judges), JWT with `jose` in an httpOnly cookie |
+| **Email** | `nodemailer` over any SMTP provider (Brevo in production, Gmail also supported) |
+| **Excel** | ExcelJS in a Route Handler |
+| **Hosting** | Vercel (Hobby) + Vercel Cron |
+| **PWA** | Standalone web manifest |
+
+---
+
+## 🏗️ Project Structure
+
+```
+app/
+  (auth)/login/            # Login screen (admin and judge share it)
+  (auth)/logout/           # Route handler that clears the cookie
+  admin/                   # Admin area (desktop, responsive)
+    page.tsx               #   Events dashboard
+    actions.ts             #   Server actions for events (create, edit, state)
+    eventos/[id]/          #   Event configuration + navigation to:
+      equipos/             #     · Teams CRUD + bulk import
+      jueces/              #     · Judges CRUD + credentials + emails
+      progreso/            #     · Progress dashboard
+      resultados/          #     · Rankings per category
+  api/eventos/[id]/exportar/   # Route handler that builds the .xlsx
+  api/cron/keep-smtp-alive/    # Monthly cron for the SMTP key
+  juez/                    # Judge area (mobile first)
+    page.tsx               #   Team list (pending / voted)
+    equipos/[teamId]/      #   Voting screen (score chips)
+
+components/ui/             # Shared components (Modal, ConfirmDialog, StatusBadge, Toast, Skeleton, icons…)
+lib/
+  auth/                    # crypto (bcrypt + AES), JWT (jose), session helpers
+  prisma.ts                # PrismaClient singleton
+  events.ts                # State mapping, ordering and progress
+  results.ts               # Averages and rankings per category
+  excel.ts                 # Workbook (Summary + Detail sheets)
+  email.ts                 # SMTP transporter and HTML template
+
+prisma/
+  schema.prisma            # Admin, Event, Category, Team, Judge, Vote
+  seed.ts                  # Admin seed
+  migrations/              # Versioned SQL migrations
+
+middleware.ts              # Protects /admin and /juez by role
+public/                    # Logos and PWA manifest
+docs/                      # Project spec, design notes and original mockups
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
 - Node.js 20+
-- npm
-- Una base de datos PostgreSQL accesible (Neon es lo recomendado)
-- Una cuenta Gmail con verificación en 2 pasos activada (para el envío de
-  credenciales)
+- A PostgreSQL database (Neon recommended)
+- An SMTP account to send credentials (Brevo works without a custom domain; Gmail needs an App Password)
 
-### 1. Clonar e instalar
+### 1. Clone and install
 
 ```bash
 git clone https://github.com/NotJcao17/mision-votum.git
@@ -44,133 +196,67 @@ cd mision-votum
 npm install
 ```
 
-### 2. Variables de entorno
-
-Crea un archivo `.env` en la raíz copiando de `.env.example`:
+### 2. Environment variables
 
 ```bash
 cp .env.example .env
 ```
 
-Llena los valores:
+| Variable | Purpose |
+| :--- | :--- |
+| `DATABASE_URL` | Pooled Postgres connection (Neon → Connection string, with pooler) |
+| `DIRECT_URL` | Direct connection for migrations (same string without `-pooler`) |
+| `ENCRYPTION_KEY` | AES-256 key, 32 bytes in base64 |
+| `JWT_SECRET` | Session cookie signing secret, 32 bytes in base64 |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | SMTP sender (defaults to Gmail `smtp.gmail.com:465` if host and port are omitted) |
+| `MAIL_SEND_DELAY_MS` | Optional pause between bulk emails (default 700) |
+| `APP_URL` | Optional public URL, adds a login button to the emails |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Admin credentials, used only by the seed |
+| `CRON_SECRET` | Secret Vercel sends to the SMTP keep-alive cron |
 
-| Variable | Para qué | Cómo obtenerla |
-|----------|----------|----------------|
-| `DATABASE_URL` | Conexión pooled a Postgres | Neon dashboard → tu proyecto → "Connection string" (con pooler) |
-| `DIRECT_URL` | Conexión directa para migraciones | El mismo string pero sin `-pooler` en el host |
-| `ENCRYPTION_KEY` | Clave AES-256 (32 bytes en base64) | `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` |
-| `JWT_SECRET` | Firma de la cookie de sesión (32 bytes base64) | Igual que arriba con otro valor |
-| `SMTP_USER` | Cuenta Gmail remitente | Ej. `misionvotum@gmail.com` |
-| `SMTP_PASS` | "Contraseña de aplicación" de Google | https://myaccount.google.com/apppasswords (16 caracteres) |
-| `APP_URL` | URL pública (opcional) | Para incluir un botón de login en los emails. Ej. `https://mision-votum.vercel.app` |
-| `ADMIN_USERNAME` | Usuario del admin (solo seed) | Ej. `admin` |
-| `ADMIN_PASSWORD` | Contraseña inicial del admin | La que quieras; se hashea con bcrypt al sembrar |
-
-### 3. Migrar la base de datos y sembrar el admin
+Generate the keys with:
 
 ```bash
-npx prisma migrate deploy   # aplica las migraciones existentes
-npx prisma db seed          # crea/actualiza el admin con los valores del .env
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-> **Importante**: la contraseña del admin en texto plano solo vive en tu `.env`.
-> En la BDD solo se guarda el hash. Si la pierdes, re-corre el seed con un
-> nuevo `ADMIN_PASSWORD`.
+### 3. Migrate and seed the admin
 
-### 4. Levantar
+```bash
+npx prisma migrate deploy   # applies the migrations
+npx prisma db seed          # creates or updates the admin from .env
+```
+
+> The admin's plain password only lives in your `.env`; the database stores the bcrypt hash. If you
+> lose it, run the seed again with a new `ADMIN_PASSWORD`.
+
+### 4. Run
 
 ```bash
 npm run dev          # http://localhost:3000
 ```
 
-Inicia sesión con el `ADMIN_USERNAME` / `ADMIN_PASSWORD` que pusiste.
+Log in with the `ADMIN_USERNAME` / `ADMIN_PASSWORD` you set.
 
 ---
 
+## 🧭 Typical Flow
 
-## Estructura del proyecto
+**Admin**
+1. Create the event: name, date, score range and categories.
+2. Add the teams (one by one or bulk import).
+3. Add the judges; usernames and passwords are generated.
+4. Send the credentials by email (or hand them out; the eye button reveals them).
+5. Switch the event to **Active** when the contest starts and follow the progress.
+6. **Close** the event at the end, check the results and export the Excel file.
 
-```
-app/
-  (auth)/login/        # Pantalla de login (admin y juez en la misma)
-  (auth)/logout/       # Route handler que borra la cookie
-  admin/               # Área del admin (desktop, responsive)
-    page.tsx           #   Dashboard con lista de eventos
-    actions.ts         #   Server actions de eventos (crear, editar, estado)
-    eventos/[id]/      #   Configuración del evento + nav a sub-pantallas:
-      equipos/         #     · CRUD + importación masiva
-      jueces/          #     · CRUD + credenciales + envío de emails
-      progreso/        #     · Dashboard de avance
-      resultados/      #     · Rankings por categoría
-  api/eventos/[id]/exportar/   # Route handler que genera el .xlsx
-  juez/                # Área del juez (mobile-first)
-    page.tsx           #   Lista de equipos (pendientes / votados)
-    equipos/[teamId]/  #   Pantalla de votación (chips de calificación)
-
-components/ui/         # Componentes compartidos (Modal, ConfirmDialog,
-                       # StatusBadge, Toast, Skeleton, íconos, etc.)
-lib/
-  auth/                # crypto (bcrypt + AES), JWT (jose), session helpers
-  prisma.ts            # Singleton de PrismaClient
-  events.ts            # Mapeo estado ES↔EventStatus, orden y progreso
-  results.ts           # Cálculo de promedios y rankings por categoría
-  excel.ts             # Construcción del workbook (hojas Resumen + Detalle)
-  email.ts             # Transporter de Gmail SMTP y plantilla HTML
-
-prisma/
-  schema.prisma        # Modelo: Admin, Event, Category, Team, Judge, Vote
-  seed.ts              # Script de seed del admin
-  migrations/          # Migraciones SQL versionadas
-
-middleware.ts          # Protege /admin y /juez por rol; redirige al login
-public/                # Logos, manifest PWA
-docs/                  # Espec del proyecto y mockups originales
-```
+**Judge**
+1. Log in with the credentials received.
+2. Pick a pending team and score each category with a chip.
+3. Send the vote; it can be edited while the event is Active.
 
 ---
 
-## Funcionalidad
-
-### Roles
-- **Admin** (uno, creado por seed): configura eventos y consulta resultados.
-- **Juez** (~15 por evento, creados por el admin): vota equipos desde su celular.
-
-### Eventos
-Cada evento tiene tres estados:
-
-| Estado | Qué se puede hacer |
-|--------|-------------------|
-| **Borrador** | Admin configura todo. Jueces no entran. |
-| **Activo** | Jueces votan. Categorías y rango bloqueados. Equipos y jueces aún editables. |
-| **Cerrado** | Solo lectura. Admin puede exportar; jueces no pueden modificar votos. |
-
-Devolver de Activo a Borrador borra todos los votos (confirmación fuerte).
-Eliminar equipos/jueces con votos también pide confirmación fuerte.
-
-### Flujo del admin (resumen)
-1. Crea evento → configura datos, rango (ej. 1–5) y categorías.
-2. Añade equipos (uno por uno o por importación masiva).
-3. Añade jueces (uno por uno o por importación). El sistema genera username
-   y contraseña automáticamente.
-4. Envía credenciales por email (o las entrega manualmente — el admin puede
-   verlas con el botón de ojo).
-5. Cambia el evento a Activo cuando empieza el concurso.
-6. Monitorea el progreso (refresca manualmente).
-7. Cierra el evento al terminar.
-8. Consulta resultados y exporta el archivo Excel.
-
-### Flujo del juez
-1. Inicia sesión con las credenciales recibidas.
-2. Ve la lista de equipos: pendientes primero, ya votados después.
-3. Selecciona un equipo y califica cada categoría con un chip (rango definido
-   por el admin). Envía.
-4. Puede regresar a un equipo y modificar su voto mientras el evento esté
-   Activo.
-
-### Exportación a Excel
-- Botón "Exportar a Excel" en la pantalla de Resultados.
-- Genera dos hojas:
-  - **Resumen**: una fila por equipo con promedio + posición por cada
-    categoría y promedio general.
-  - **Detalle**: una fila por voto individual (auditoría).
-- Nombre del archivo: `<slug-del-evento>.xlsx`.
+<div align="center">
+  Made for <b>Colegio Misión Montessori</b> · Created by <b>Juan Carlos Orozco Nieto</b>
+</div>
